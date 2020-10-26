@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
       <img src={githubImage} alt="Github Explore" />
       <Title>Explore repositórios no Github</Title>
 
-      <Form onSubmit={handleAddRepository}>
+      <Form hasError={!!inputError} onSubmit={handleAddRepository}>
         <input
           value={newRepo}
           onChange={e => setNewRepo(e.target.value)}
@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
         <button type="submit" >Pesquisar</button>
       </Form>
 
-      { inputError && <Error>{inputError}</Error>}
+      {inputError && <Error>{inputError}</Error>}
 
       <Repositories>
         {repositories.map(repository => (
