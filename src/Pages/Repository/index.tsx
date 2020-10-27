@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouteMatch, Link } from 'react-router-dom';
 
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
 import githubImage from '../../assets/logo-github.svg';
+
+import api from '../../services/api';
 
 import { Header, RepositoryInfo, Issues } from './styles';
 
@@ -11,9 +13,79 @@ interface RepositoryParams {
   repository: string;
 }
 
+interface IRepository {
+  full_name: string;
+  description: string;
+  stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  owner: {
+    login: string;
+    avatar_url: string;
+  }
+}
+
+interface issue {
+  id: number;
+  title: string;
+  html_url: string;
+  user: {
+    login: string;
+  }
+}
+
 const Repository: React.FC = () => {
+  const [repository, setRepository] = useState<IRepository | null>(null);
+  const [issues, setIssues] = useState<issue[]>([]);
+
   const { params } = useRouteMatch<RepositoryParams>();
-  console.log(params);
+
+  /*
+   Quando a segunda requisição não depender da primeira para ser executada,
+   a melhor solução é utilizar o .THEN;
+   api.get(`repos/${params.repository}`).then(response => {
+     console.log(response.data);
+   });
+
+   api.get(`repos/${params.repository}/issues`).then(response => {
+       console.log(response.data);
+   });
+   */
+
+  /*
+    Utilizando o AWAIT a próxima requisição só será realizada quando 
+    a requisição atual tiver sua resposta
+  async function loadData(): Promise<void> {
+    const repository = await api.get(`repos/${params.repository}`);
+    const issues = await api.get(`repos/${params.repository}/issues`);
+
+    console.log(repository);
+    console.log(issues);
+  }*/
+
+  /*  Para fazer duas requisições simultaneamente podemos utilizar esse modelo
+    da função a baixo;
+   async function loadData(): Promise<void> {
+     const [repository, issues] = await Promise.all([
+       api.get(`repos/${params.repository}`),
+       api.get(`repos/${params.repository}/issues`)
+     ]);
+ 
+     console.log(repository);
+     console.log(issues);
+   };
+*/
+
+  useEffect(() => {
+    api.get(`repos/${params.repository}`).then(response => {
+      setRepository(response.data);
+    });
+
+    api.get(`repos/${params.repository}/issues`).then(response => {
+      setIssues(response.data);
+    });
+  }, [params.repository]);
+
 
   return (
     <>
@@ -25,38 +97,46 @@ const Repository: React.FC = () => {
       </Link>
       </Header>
 
-      <RepositoryInfo>
-        <header>
-          <img src="https://avatars1.githubusercontent.com/u/54491980?s=460&u=5457192f7674845b14a107f7791033cfcbabb036&v=4" alt="Me" />
-          <div>
-            <strong>Daniel/Detran</strong>
-            <p>Testando</p>
-          </div>
-        </header>
-        <ul>
-          <li>
-            <strong>1800</strong>
-            <span>Stars</span>
-          </li>
-          <li>
-            <strong>60</strong>
-            <span>Forks</span>
-          </li>
-          <li>
-            <strong>67</strong>
-            <span>Issues abertas</span>
-          </li>
-        </ul>
-      </RepositoryInfo>
+      { repository ? (
+        <RepositoryInfo>
+          <header>
+            {/* src={repository ? repository.owner.avatar_url : null}**/}
+            <img
+              src={repository.owner.avatar_url} alt={repository.owner.login} />
+            <div>
+              <strong>{repository.full_name}</strong>
+              <p>{repository.description}</p>
+            </div>
+          </header>
+          <ul>
+            <li>
+              <strong>{repository.stargazers_count}</strong>
+              <span>Stars</span>
+            </li>
+            <li>
+              <strong>{repository.forks_count}</strong>
+              <span>Forks</span>
+            </li>
+            <li>
+              <strong>{repository.open_issues_count}</strong>
+              <span>Issues abertas</span>
+            </li>
+          </ul>
+        </RepositoryInfo>
+      ) : (
+          <p>Carregando...</p>
+        )}
 
       <Issues>
-        <Link to={"teste"}>
-          <div>
-            <strong>teste</strong>
-            <p>testesdasd</p>
-          </div>
-          <FiChevronRight size={20} />
-        </Link>
+        {issues.map(issue => (
+          <a key={issue.id} href={issue.html_url}>
+            <div>
+              <strong>{issue.title}</strong>
+              <p>{issue.user.login}</p>
+            </div>
+            <FiChevronRight size={20} />
+          </a>
+        ))}
       </Issues>
     </>
   );
